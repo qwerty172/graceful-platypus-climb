@@ -3,8 +3,6 @@ import subprocess
 import tempfile
 import shutil
 import json
-import cloudinary
-import cloudinary.uploader
 
 def handler(request, response):
     print("Python Vercel function 'convert' started.")
@@ -20,23 +18,6 @@ def handler(request, response):
         if not python_code:
             response.status(400).json({'error': 'Python code is required'})
             return
-
-        # Получаем учетные данные Cloudinary из переменных окружения
-        cloudinary_cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME')
-        cloudinary_api_key = os.environ.get('CLOUDINARY_API_KEY')
-        cloudinary_api_secret = os.environ.get('CLOUDINARY_API_SECRET')
-
-        if not all([cloudinary_cloud_name, cloudinary_api_key, cloudinary_api_secret]):
-            print("Cloudinary environment variables are not set.")
-            response.status(500).json({'error': 'Переменные окружения Cloudinary (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) не установлены. Пожалуйста, настройте их в Vercel.'})
-            return
-
-        # Конфигурируем Cloudinary
-        cloudinary.config(
-            cloud_name=cloudinary_cloud_name,
-            api_key=cloudinary_api_key,
-            api_secret=cloudinary_api_secret
-        )
 
         with tempfile.TemporaryDirectory(dir='/tmp') as tmpdir:
             script_name = "script.py"
@@ -68,7 +49,7 @@ def handler(request, response):
                 command,
                 capture_output=True,
                 text=True,
-                check=False # Не вызываем исключение сразу, чтобы обработать stderr
+                check=False
             )
             
             print("PyInstaller stdout:", process.stdout)
@@ -92,24 +73,17 @@ def handler(request, response):
 
             exe_file_path = os.path.join(output_dir, generated_exe_name)
             
-            # Загружаем сгенерированный .exe файл в Cloudinary
-            print(f"Uploading {exe_file_path} to Cloudinary...")
-            upload_result = cloudinary.uploader.upload(
-                exe_file_path,
-                resource_type="raw", # Для немедийных файлов, таких как .exe
-                public_id=os.path.splitext(generated_exe_name)[0], # Используем имя файла без расширения как public_id
-                folder="pyinstaller_exes" # Опционально: загрузить в определенную папку в Cloudinary
-            )
-            
-            download_url = upload_result['secure_url']
-            print(f"File uploaded to Cloudinary. URL: {download_url}")
+            # Читаем сгенерированный .exe файл
+            with open(exe_file_path, 'rb') as f:
+                exe_content = f.read()
 
-            response.status(200).json({
-                'downloadUrl': download_url,
-                'message': f'PyInstaller успешно выполнен. Файл "{generated_exe_name}" загружен в Cloudinary.'
-            })
+            # Устанавливаем заголовки для скачивания файла
+            response.headers['Content-Type'] = 'application/octet-stream'
+            response.headers['Content-Disposition'] = f'attachment; filename="{generated_exe_name}"'
+            response.status(200).send(exe_content) # Отправляем бинарное содержимое
+            print(f"Successfully sent {generated_exe_name} as response.")
+            return
 
     except Exception as e:
         print(f"An unexpected server error occurred: {e}")
-        # В случае любой другой неожиданной ошибки, возвращаем JSON-ответ
         response.status(500).json({'error': f'Внутренняя ошибка сервера: {str(e)}'})

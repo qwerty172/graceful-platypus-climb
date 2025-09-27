@@ -8,9 +8,8 @@ import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast
 
 const ConverterPage = () => {
   const [pythonCode, setPythonCode] = useState<string>("");
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [serverMessage, setServerMessage] = useState<string | null>(null);
+  const [downloadFileName, setDownloadFileName] = useState<string | null>(null); // Новое состояние для имени файла
 
   const handleSubmit = async () => {
     if (!pythonCode.trim()) {
@@ -19,8 +18,7 @@ const ConverterPage = () => {
     }
 
     setIsLoading(true);
-    setDownloadUrl(null);
-    setServerMessage(null);
+    setDownloadFileName(null); // Сбрасываем имя файла
     const loadingToastId = showLoading("Конвертация кода...");
 
     try {
@@ -33,14 +31,39 @@ const ConverterPage = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Ошибка сервера');
+        // Если ответ не OK, это может быть JSON-ошибка или обычный текст
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Ошибка сервера');
+        } else {
+          const errorText = await response.text();
+          throw new Error(errorText || 'Неизвестная ошибка сервера');
+        }
       }
 
-      const data = await response.json();
-      setDownloadUrl(data.downloadUrl);
-      setServerMessage(data.message || "Файл успешно сгенерирован и загружен!");
-      showSuccess("Запрос на конвертацию успешно отправлен!");
+      // Если ответ OK, это должен быть бинарный файл
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'output.exe';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1];
+        }
+      }
+      setDownloadFileName(filename);
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      showSuccess(`Файл "${filename}" успешно сгенерирован и загружен!`);
     } catch (error: any) {
       console.error("Ошибка при конвертации:", error);
       showError(`Произошла ошибка при конвертации кода: ${error.message || 'Неизвестная ошибка'}`);
@@ -58,7 +81,7 @@ const ConverterPage = () => {
           <CardDescription className="text-center mt-2">
             Введите ваш Python-код ниже, чтобы конвертировать его в исполняемый файл (.exe).
             <br />
-            Сгенерированный файл будет загружен в Vercel Blob Storage для скачивания.
+            Сгенерированный файл будет загружен напрямую в ваш браузер.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -74,21 +97,13 @@ const ConverterPage = () => {
             <Button onClick={handleSubmit} disabled={isLoading} className="w-full">
               {isLoading ? "Конвертация..." : "Конвертировать в EXE"}
             </Button>
-            {downloadUrl && (
+            {downloadFileName && (
               <div className="mt-4 text-center">
                 <p className="mb-2 text-lg font-medium">
-                  {serverMessage || "Ваш файл готов к загрузке:"}
+                  Файл "{downloadFileName}" успешно сгенерирован и загружен!
                 </p>
-                <a
-                  href={downloadUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-                >
-                  Скачать EXE файл
-                </a>
                 <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                  Нажмите кнопку выше, чтобы скачать сгенерированный файл.
+                  Если загрузка не началась автоматически, проверьте папку загрузок.
                 </p>
               </div>
             )}
