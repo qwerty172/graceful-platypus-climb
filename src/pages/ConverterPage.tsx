@@ -22,7 +22,9 @@ const ConverterPage = () => {
     const loadingToastId = showLoading("Отправка кода на сервер...");
 
     try {
-      const response = await fetch('/api/convert', {
+      // !!! ВАЖНО: Замените этот URL на URL вашего сервиса Render !!!
+      // Например: const response = await fetch('https://your-service-name.onrender.com/convert', {
+      const response = await fetch('https://your-render-backend-url.onrender.com/convert', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
