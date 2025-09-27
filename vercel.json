@@ -1,5 +1,4 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
       "source": "/(.*)",
@@ -8,7 +7,7 @@
   ],
   "functions": {
     "api/**/*.py": {
-      "runtime": "python@3.9"
+      "runtime": "python@3.10"
     }
   }
 }
