@@ -1,2 +1,2 @@
 pyinstaller
-vercel-blob
+cloudinary

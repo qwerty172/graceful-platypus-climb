@@ -3,7 +3,8 @@ import subprocess
 import tempfile
 import shutil
 import json
-from vercel_blob import BlobClient # Импортируем BlobClient
+import cloudinary
+import cloudinary.uploader
 
 def handler(request, response):
     print("Python Vercel function 'convert' started.")
@@ -19,13 +20,20 @@ def handler(request, response):
             response.status(400).json({'error': 'Python code is required'})
             return
 
-        # Получаем токен Vercel Blob из переменных окружения
-        blob_token = os.environ.get('BLOB_READ_WRITE_TOKEN')
-        if not blob_token:
-            raise Exception("Переменная окружения BLOB_READ_WRITE_TOKEN не установлена. Пожалуйста, настройте ее в Vercel.")
+        # Получаем учетные данные Cloudinary из переменных окружения
+        cloudinary_cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME')
+        cloudinary_api_key = os.environ.get('CLOUDINARY_API_KEY')
+        cloudinary_api_secret = os.environ.get('CLOUDINARY_API_SECRET')
 
-        # Создаем экземпляр BlobClient
-        client = BlobClient(token=blob_token)
+        if not all([cloudinary_cloud_name, cloudinary_api_key, cloudinary_api_secret]):
+            raise Exception("Переменные окружения Cloudinary (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) не установлены. Пожалуйста, настройте их в Vercel.")
+
+        # Конфигурируем Cloudinary
+        cloudinary.config(
+            cloud_name=cloudinary_cloud_name,
+            api_key=cloudinary_api_key,
+            api_secret=cloudinary_api_secret
+        )
 
         with tempfile.TemporaryDirectory(dir='/tmp') as tmpdir:
             script_name = "script.py"
@@ -74,21 +82,21 @@ def handler(request, response):
 
             exe_file_path = os.path.join(output_dir, generated_exe_name)
             
-            # Загружаем сгенерированный .exe файл в Vercel Blob
-            print(f"Uploading {exe_file_path} to Vercel Blob...")
-            with open(exe_file_path, 'rb') as f:
-                uploaded_blob = client.upload(
-                    pathname=generated_exe_name, # Используем оригинальное имя файла как путь
-                    body=f.read(),
-                    content_type='application/octet-stream' # Стандартный тип контента для исполняемых файлов
-                )
+            # Загружаем сгенерированный .exe файл в Cloudinary
+            print(f"Uploading {exe_file_path} to Cloudinary...")
+            upload_result = cloudinary.uploader.upload(
+                exe_file_path,
+                resource_type="raw", # Для немедийных файлов, таких как .exe
+                public_id=os.path.splitext(generated_exe_name)[0], # Используем имя файла без расширения как public_id
+                folder="pyinstaller_exes" # Опционально: загрузить в определенную папку в Cloudinary
+            )
             
-            download_url = uploaded_blob['url']
-            print(f"File uploaded to Vercel Blob. URL: {download_url}")
+            download_url = upload_result['secure_url']
+            print(f"File uploaded to Cloudinary. URL: {download_url}")
 
             response.status(200).json({
                 'downloadUrl': download_url,
-                'message': f'PyInstaller успешно выполнен. Файл "{generated_exe_name}" загружен в Vercel Blob.'
+                'message': f'PyInstaller успешно выполнен. Файл "{generated_exe_name}" загружен в Cloudinary.'
             })
 
     except subprocess.CalledProcessError as e:
