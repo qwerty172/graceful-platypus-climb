@@ -10,7 +10,7 @@ const ConverterPage = () => {
   const [pythonCode, setPythonCode] = useState<string>("");
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [serverMessage, setServerMessage] = useState<string | null>(null); // Для отображения сообщения от сервера
+  const [serverMessage, setServerMessage] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     if (!pythonCode.trim()) {
@@ -24,7 +24,7 @@ const ConverterPage = () => {
     const loadingToastId = showLoading("Конвертация кода...");
 
     try {
-      const response = await fetch('/api/convert', { // Обращаемся к нашей Vercel Serverless Function
+      const response = await fetch('/api/convert', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -39,7 +39,7 @@ const ConverterPage = () => {
 
       const data = await response.json();
       setDownloadUrl(data.downloadUrl);
-      setServerMessage(data.message || "Файл успешно сгенерирован!");
+      setServerMessage(data.message || "Файл успешно сгенерирован и загружен!");
       showSuccess("Запрос на конвертацию успешно отправлен!");
     } catch (error: any) {
       console.error("Ошибка при конвертации:", error);
@@ -58,7 +58,7 @@ const ConverterPage = () => {
           <CardDescription className="text-center mt-2">
             Введите ваш Python-код ниже, чтобы конвертировать его в исполняемый файл (.exe).
             <br />
-            **Примечание:** Компиляция PyInstaller будет выполнена на сервере, но для реальной загрузки файла потребуется интеграция с облачным хранилищем.
+            Сгенерированный файл будет загружен в Vercel Blob Storage для скачивания.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -77,7 +77,7 @@ const ConverterPage = () => {
             {downloadUrl && (
               <div className="mt-4 text-center">
                 <p className="mb-2 text-lg font-medium">
-                  {serverMessage || "Ваш файл готов (ссылка для примера):"}
+                  {serverMessage || "Ваш файл готов к загрузке:"}
                 </p>
                 <a
                   href={downloadUrl}
@@ -85,10 +85,10 @@ const ConverterPage = () => {
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
                 >
-                  Перейти по ссылке (пример)
+                  Скачать EXE файл
                 </a>
                 <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                  Нажмите кнопку выше, чтобы перейти по сгенерированной ссылке. Обратите внимание, что это демонстрационная ссылка, так как для реальной загрузки файла требуется интеграция с облачным хранилищем.
+                  Нажмите кнопку выше, чтобы скачать сгенерированный файл.
                 </p>
               </div>
             )}
