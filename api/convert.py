@@ -5,14 +5,16 @@ import shutil
 import json
 import cloudinary
 import cloudinary.uploader
+import traceback # Добавляем импорт traceback
 
 def handler(request, response):
     print("Python Vercel function 'convert' started.")
-    if request.method != 'POST':
-        response.status(405).json({'error': 'Method Not Allowed'})
-        return
-
+    
     try:
+        if request.method != 'POST':
+            response.status(405).json({'error': 'Method Not Allowed'})
+            return
+
         body = request.json()
         python_code = body.get('pythonCode')
 
@@ -105,5 +107,6 @@ def handler(request, response):
         print(f"PyInstaller stderr: {e.stderr}")
         response.status(500).json({'error': f'Компиляция PyInstaller не удалась. Проверьте логи сервера для получения подробной информации. Stderr: {e.stderr}'})
     except Exception as e:
-        print(f"Ошибка сервера: {e}")
+        print(f"Неожиданная ошибка сервера: {e}")
+        print(traceback.format_exc()) # Выводим полный трассировку стека
         response.status(500).json({'error': f'Внутренняя ошибка сервера: {str(e)}'})
