@@ -1,1 +1,2 @@
-pyinstaller
+# No external dependencies needed for this simple function.
+# This file ensures Vercel correctly identifies and deploys the Python function.
