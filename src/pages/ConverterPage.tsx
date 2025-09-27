@@ -10,6 +10,7 @@ const ConverterPage = () => {
   const [pythonCode, setPythonCode] = useState<string>("");
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [serverMessage, setServerMessage] = useState<string | null>(null); // Для отображения сообщения от сервера
 
   const handleSubmit = async () => {
     if (!pythonCode.trim()) {
@@ -19,6 +20,7 @@ const ConverterPage = () => {
 
     setIsLoading(true);
     setDownloadUrl(null);
+    setServerMessage(null);
     const loadingToastId = showLoading("Конвертация кода...");
 
     try {
@@ -37,7 +39,8 @@ const ConverterPage = () => {
 
       const data = await response.json();
       setDownloadUrl(data.downloadUrl);
-      showSuccess("Файл успешно сгенерирован!");
+      setServerMessage(data.message || "Файл успешно сгенерирован!");
+      showSuccess("Запрос на конвертацию успешно отправлен!");
     } catch (error: any) {
       console.error("Ошибка при конвертации:", error);
       showError(`Произошла ошибка при конвертации кода: ${error.message || 'Неизвестная ошибка'}`);
@@ -54,6 +57,8 @@ const ConverterPage = () => {
           <CardTitle className="text-3xl font-bold text-center">Конвертер Python в EXE</CardTitle>
           <CardDescription className="text-center mt-2">
             Введите ваш Python-код ниже, чтобы конвертировать его в исполняемый файл (.exe).
+            <br />
+            **Примечание:** Компиляция PyInstaller будет выполнена на сервере, но для реальной загрузки файла потребуется интеграция с облачным хранилищем.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -71,16 +76,20 @@ const ConverterPage = () => {
             </Button>
             {downloadUrl && (
               <div className="mt-4 text-center">
-                <p className="mb-2 text-lg font-medium">Ваш файл готов:</p>
+                <p className="mb-2 text-lg font-medium">
+                  {serverMessage || "Ваш файл готов (ссылка для примера):"}
+                </p>
                 <a
                   href={downloadUrl}
-                  download="your_generated_app.exe"
-                  target="_blank" // Открываем ссылку в новой вкладке
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
                 >
-                  Скачать your_generated_app.exe
+                  Перейти по ссылке (пример)
                 </a>
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  Нажмите кнопку выше, чтобы перейти по сгенерированной ссылке. Обратите внимание, что это демонстрационная ссылка, так как для реальной загрузки файла требуется интеграция с облачным хранилищем.
+                </p>
               </div>
             )}
           </div>
