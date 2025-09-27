@@ -5,6 +5,7 @@ import shutil
 import json
 
 def handler(request, response):
+    print("Python Vercel function 'convert' started.") # Добавлено для отладки
     if request.method != 'POST':
         response.status(405).json({'error': 'Method Not Allowed'})
         return
@@ -34,11 +35,7 @@ def handler(request, response):
             os.makedirs(work_dir, exist_ok=True)
             os.makedirs(spec_dir, exist_ok=True)
 
-            # Запускаем PyInstaller
-            # --onefile: создает один исполняемый файл
-            # --distpath: куда поместить скомпилированное приложение
-            # --workpath: куда поместить все временные файлы
-            # --specpath: куда поместить файл .spec
+            print(f"Attempting to run PyInstaller for script: {script_path}") # Добавлено для отладки
             command = [
                 'pyinstaller',
                 '--onefile',
@@ -48,7 +45,7 @@ def handler(request, response):
                 script_path
             ]
             
-            print(f"Running PyInstaller command: {' '.join(command)}")
+            print(f"PyInstaller command: {' '.join(command)}")
             
             process = subprocess.run(
                 command,
@@ -83,6 +80,7 @@ def handler(request, response):
             
             mock_download_link = f"https://example.com/generated_app_{generated_exe_name}"
             
+            print("Function ending successfully with mock download link.") # Добавлено для отладки
             response.status(200).json({
                 'downloadUrl': mock_download_link,
                 'message': f'PyInstaller успешно выполнен. Файл с именем "{generated_exe_name}" был сгенерирован во временном хранилище функции. Для фактической загрузки его необходимо загрузить в постоянное хранилище.'
@@ -95,4 +93,5 @@ def handler(request, response):
         response.status(500).json({'error': f'Компиляция PyInstaller не удалась. Проверьте логи сервера для получения подробной информации. Stderr: {e.stderr}'})
     except Exception as e:
         print(f"Ошибка сервера: {e}")
+        # Убедимся, что JSON-ответ всегда отправляется, даже при неожиданных ошибках
         response.status(500).json({'error': f'Внутренняя ошибка сервера: {str(e)}'})
