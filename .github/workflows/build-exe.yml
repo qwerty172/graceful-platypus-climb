@@ -1,0 +1,34 @@
+name: Build Python to EXE
+
+on:
+  push:
+    branches:
+      - main # Запускать при пуше в ветку main
+  workflow_dispatch: # Позволяет запускать workflow вручную из интерфейса GitHub
+
+jobs:
+  build:
+    runs-on: windows-latest # Используем Windows-окружение для сборки EXE
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9' # Используем Python 3.9
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Build EXE with PyInstaller
+        run: pyinstaller --onefile src/python_scripts/converter_script.py # Компилируем ваш скрипт
+        # PyInstaller по умолчанию создает папку 'dist' и помещает туда EXE-файл.
+        # Имя EXE-файла будет 'converter_script.exe'
+
+      - name: Upload EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-converter-exe
+          path: dist/converter_script.exe # Путь к скомпилированному EXE-файлу
