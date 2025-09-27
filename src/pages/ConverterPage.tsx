@@ -22,20 +22,25 @@ const ConverterPage = () => {
     const loadingToastId = showLoading("Конвертация кода...");
 
     try {
-      // Здесь будет логика отправки кода на ваш бэкенд Vercel
-      // и получение ссылки на скачивание .exe файла.
-      // Пока это заглушка.
-      console.log("Отправка кода на бэкенд:", pythonCode);
+      const response = await fetch('/api/convert', { // Обращаемся к нашей Vercel Serverless Function
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ pythonCode }),
+      });
 
-      // Пример имитации ответа от бэкенда
-      await new Promise((resolve) => setTimeout(resolve, 3000)); // Имитация задержки сети
-      const mockDownloadLink = "https://example.com/your_generated_app.exe"; // Замените на реальную ссылку от вашего бэкенда
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Ошибка сервера');
+      }
 
-      setDownloadUrl(mockDownloadLink);
+      const data = await response.json();
+      setDownloadUrl(data.downloadUrl);
       showSuccess("Файл успешно сгенерирован!");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Ошибка при конвертации:", error);
-      showError("Произошла ошибка при конвертации кода.");
+      showError(`Произошла ошибка при конвертации кода: ${error.message || 'Неизвестная ошибка'}`);
     } finally {
       setIsLoading(false);
       dismissToast(loadingToastId);
@@ -70,6 +75,8 @@ const ConverterPage = () => {
                 <a
                   href={downloadUrl}
                   download="your_generated_app.exe"
+                  target="_blank" // Открываем ссылку в новой вкладке
+                  rel="noopener noreferrer"
                   className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
                 >
                   Скачать your_generated_app.exe
