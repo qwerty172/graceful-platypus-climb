@@ -9,9 +9,6 @@ def handler(request, response):
             response.status(405).json({'error': 'Method Not Allowed'})
             return
 
-        # В реальном приложении здесь можно было бы сохранить pythonCode
-        # или запустить другой процесс (например, через GitHub API),
-        # но для демонстрации мы просто подтверждаем получение.
         request_body = json.loads(request.body)
         python_code = request_body.get('pythonCode', '')
         print(f"Received Python code (first 100 chars): {python_code[:100]}...")
